@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Money Flow" />
+<meta name="theme-color" content="#141210" />
+<title>جریان پول</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141210;
+    --card: #1A1714;
+    --card2: #1E1A16;
+    --border: #2E2920;
+    --border2: #3E382E;
+    --text: #F2EDE4;
+    --muted: #8C8375;
+    --muted2: #ADA495;
+    --faint: #5C564C;
+    --faintest: #4A453C;
+    --green: #8FC98A;
+    --rust: #E2896B;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Vazirmatn', sans-serif; }
+  body { padding-bottom: 110px; min-height: 100vh; }
+  .mono { font-family: 'Space Mono', monospace; direction: ltr; display: inline-block; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
+  header { padding: 32px 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .header-text { }
+  .icon-btn { background: var(--card2); border: 1px solid var(--border); color: var(--muted2); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .icon-btn:active { transform: scale(0.95); }
+
+  /* Lock overlay */
+  .lock-screen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 20px;
+  }
+  .lock-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--card2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--muted2); }
+  .lock-title { font-size: 16px; font-weight: 500; color: var(--text); }
+  .lock-btn {
+    background: var(--text); color: var(--bg); border: none; border-radius: 12px; padding: 12px 28px;
+    font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .lock-btn:active { transform: scale(0.97); }
+  .lock-error { color: var(--rust); font-size: 12px; }
+  .pin-dots { display: flex; gap: 12px; margin: 4px 0; }
+  .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted2); }
+  .pin-dot.filled { background: var(--text); border-color: var(--text); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 12px; margin-top: 8px; }
+  .pin-pad button {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--card2); border: 1px solid var(--border);
+    color: var(--text); font-size: 20px; font-family: 'Space Mono', monospace; cursor: pointer;
+  }
+  .pin-pad button:active { background: var(--border); }
+  .pin-pad .pin-del { font-size: 14px; font-family: 'Vazirmatn', sans-serif; color: var(--muted2); }
+
+  /* Settings sheet content */
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 14px; color: var(--text); }
+  .settings-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .switch { position: relative; width: 46px; height: 26px; border-radius: 999px; background: var(--border); border: none; cursor: pointer; flex-shrink: 0; }
+  .switch.on { background: var(--green); }
+  .switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--text); transition: transform .15s;
+  }
+  .switch.on::after { transform: translateX(-20px); }
+  h1 { font-size: 24px; font-weight: 900; margin: 0; color: var(--text); }
+
+  .balance-card {
+    margin: 0 20px; border-radius: 24px; background: var(--card2);
+    border: 1px solid var(--border); padding: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden;
+  }
+  .balance-card::before {
+    content: ''; position: absolute; left: -24px; top: -24px; width: 112px; height: 112px;
+    border-radius: 50%; background: #241F19;
+  }
+  .balance-inner { position: relative; }
+  .balance-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .balance-amount { display: flex; align-items: baseline; gap: 8px; }
+  .balance-amount .num { font-size: 30px; font-weight: 700; }
+  .balance-amount .unit { font-size: 12px; color: var(--muted); }
+  .stat-row { display: flex; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .stat { flex: 1; }
+  .stat-label { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-bottom: 4px; }
+  .stat-value { font-size: 14px; font-weight: 700; color: var(--text); }
+
+  section { margin: 24px 20px 0; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .tabs { display: flex; background: var(--card2); border: 1px solid var(--border); border-radius: 999px; padding: 2px; }
+  .tabs button { border: none; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: all .15s; font-family: inherit; }
+  .tabs button.active { background: var(--text); color: var(--bg); }
+
+  .row-list { display: flex; flex-direction: column; gap: 8px; }
+  .empty { text-align: center; padding: 24px 0; color: var(--faint); font-size: 14px; }
+
+  .period-row, .txn-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;
+    animation: rowIn .25s ease-out both; transition: border-color .15s, transform .15s;
+  }
+  .txn-row:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .period-label { font-size: 14px; font-weight: 500; }
+  .period-side { display: flex; align-items: center; gap: 12px; }
+  .period-mini { text-align: left; font-size: 10px; color: #6E675B; line-height: 1.4; }
+  .period-net { font-size: 14px; font-weight: 700; }
+
+  .cat-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .cat-bar-label { width: 64px; font-size: 12px; color: var(--muted2); flex-shrink: 0; }
+  .cat-bar-track { flex: 1; height: 8px; border-radius: 999px; background: #241F19; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 999px; }
+  .cat-bar-total { width: 64px; text-align: left; font-size: 12px; color: var(--muted2); flex-shrink: 0; }
+
+  .txn-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .txn-title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .txn-amt { font-size: 14px; font-weight: 700; text-align: left; }
+  .txn-date { font-size: 10px; color: var(--faint); margin-top: 2px; white-space: nowrap; }
+  .del-btn, .edit-btn { background: none; border: none; color: var(--faintest); cursor: pointer; padding: 4px; display: flex; }
+  .del-btn:active { color: var(--rust); }
+  .edit-btn:active { color: var(--muted2); }
+
+  .search-wrap { position: relative; margin-bottom: 12px; }
+  .search-wrap svg { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+  #searchInput { padding-right: 36px; margin-bottom: 0; }
+  .search-clear {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--faint); cursor: pointer; display: none; padding: 4px;
+  }
+  .search-clear.show { display: flex; }
+
+  .fab {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: 56px; height: 56px; border-radius: 50%; background: var(--text); color: var(--bg);
+    border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform .15s; z-index: 40;
+  }
+  .fab:active { transform: translateX(-50%) scale(0.9); }
+
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end;
+    z-index: 50; opacity: 0; animation: backdropIn .2s ease-out forwards;
+  }
+  .sheet {
+    width: 100%; background: var(--card); border-top: 1px solid var(--border); border-radius: 24px 24px 0 0;
+    padding: 20px 20px 32px; transform: translateY(100%); animation: sheetUp .28s cubic-bezier(.32,.72,0,1) forwards;
+    max-height: 88vh; overflow-y: auto;
+  }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .sheet-head h2 { font-size: 18px; font-weight: 700; margin: 0; }
+  .close-btn { background: none; border: none; color: var(--muted); cursor: pointer; display: flex; }
+
+  .type-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .type-toggle button {
+    flex: 1; padding: 10px; border-radius: 12px; border: none; font-size: 14px; font-weight: 500;
+    background: #241F19; color: var(--muted2); cursor: pointer; transition: all .15s; font-family: inherit;
+  }
+  .type-toggle button:active { transform: scale(0.97); }
+  .type-toggle button.expense.active { background: var(--rust); color: var(--bg); }
+  .type-toggle button.income.active { background: var(--green); color: var(--bg); }
+
+  label.field-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; }
+  input[type=text], input[type=number] {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; outline: none; font-size: 14px;
+    font-family: inherit; transition: border-color .15s;
+  }
+  input[type=number] { font-family: 'Space Mono', monospace; direction: ltr; font-size: 16px; }
+  input::placeholder { color: var(--faint); }
+  input:focus { border-color: var(--muted); }
+
+  .cat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .cat-chips button {
+    padding: 6px 14px; border-radius: 999px; border: none; font-size: 12px; font-weight: 500;
+    background: #241F19; color: var(--muted2); cursor: pointer; transition: all .15s; font-family: inherit;
+  }
+  .cat-chips button:active { transform: scale(0.95); }
+  .cat-chips button.active { color: var(--bg); }
+
+  .error-msg { font-size: 12px; color: var(--rust); margin-bottom: 8px; }
+  .submit-btn {
+    width: 100%; background: var(--text); color: var(--bg); border: none; border-radius: 12px;
+    padding: 14px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;
+    transition: transform .15s; font-family: inherit;
+  }
+  .submit-btn:active { transform: scale(0.98); }
+
+  @keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes sheetUp { to { transform: translateY(0); } }
+  @keyframes backdropIn { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <div class="eyebrow">دفتر مالی من</div>
+    <h1>جریان پول</h1>
+  </div>
+  <button class="icon-btn" id="settingsBtn" aria-label="تنظیمات">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</header>
+
+<div class="balance-card">
+  <div class="balance-inner">
+    <div class="balance-label">مانده / پس‌انداز</div>
+    <div class="balance-amount">
+      <span class="num mono" id="balanceNum"></span>
+      <span class="unit">AED</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label" style="color:var(--green)">↑ ورودی</div>
+        <div class="stat-value mono" id="incomeTotal"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" style="color:var(--rust)">↓ خروجی</div>
+        <div class="stat-value mono" id="expenseTotal"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="section-head">
+    <div class="eyebrow" style="margin:0">مانده به تفکیک</div>
+    <div class="tabs">
+      <button id="tabDay" class="active">روزانه</button>
+      <button id="tabMonth">ماهانه</button>
+    </div>
+  </div>
+  <div class="row-list" id="periodList"></div>
+</section>
+
+<section id="catSection" style="display:none">
+  <div class="eyebrow">تفکیک دسته‌ها</div>
+  <div id="catBars"></div>
+</section>
+
+<section>
+  <div class="eyebrow">تراکنش‌ها</div>
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="جست‌وجو بر اساس عنوان..." />
+    <button class="search-clear" id="searchClear" aria-label="پاک کردن">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="row-list" id="txnList"></div>
+</section>
+
+<button class="fab" id="openFormBtn" aria-label="افزودن تراکنش">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<div class="backdrop" id="backdrop" style="display:none">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>تراکنش جدید</h2>
+      <button class="close-btn" id="closeFormBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="type-toggle">
+      <button type="button" class="expense active" id="btnExpense">خروجی</button>
+      <button type="button" class="income" id="btnIncome">ورودی</button>
+    </div>
+
+    <label class="field-label">عنوان</label>
+    <input type="text" id="inputTitle" placeholder="مثلاً ناهار" />
+
+    <label class="field-label">مبلغ (AED)</label>
+    <input type="number" id="inputAmount" placeholder="0" inputmode="decimal" />
+
+    <label class="field-label">دسته</label>
+    <div class="cat-chips" id="catChips"></div>
+
+    <label class="field-label">یادداشت (اختیاری)</label>
+    <input type="text" id="inputNote" placeholder="مثلاً ناهار با دوستان" />
+
+    <div class="error-msg" id="errorMsg" style="display:none"></div>
+    <button class="submit-btn" id="submitBtn">ثبت تراکنش</button>
+  </div>
+</div>
+
+<div class="backdrop" id="settingsBackdrop" style="display:none">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>تنظیمات</h2>
+      <button class="close-btn" id="closeSettingsBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">قفل با Face ID</div>
+        <div class="settings-desc" id="lockDesc">هر بار قبل از باز شدن اپ، هویتت تأیید می‌شه</div>
+      </div>
+      <button class="switch" id="lockSwitch"></button>
+    </div>
+  </div>
+</div>
+
+<div class="lock-screen" id="lockScreen" style="display:none"></div>
+
+<script>
+const INCOME_CATEGORIES = [
+  { id: "online", label: "آنلاین", color: "#7BAF76" },
+  { id: "inperson", label: "حضوری", color: "#6FA0A6" },
+  { id: "zeina", label: "زینا", color: "#B99B6B" },
+];
+const EXPENSE_CATEGORIES = [
+  { id: "payment", label: "پرداختی", color: "#D98B6F" },
+  { id: "expense", label: "خرجی", color: "#C4795A" },
+];
+const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
+
+let entries = [];
+try { entries = JSON.parse(localStorage.getItem("mf_entries") || "[]"); } catch(e) { entries = []; }
+
+let state = { type: "expense", category: "payment", summaryView: "day", search: "", editingId: null };
+let pinBuffer = "";
+let pinMode = "unlock"; // unlock | setup | confirm
+let pinFirstEntry = "";
+
+function bufToB64(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+function b64ToBuf(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function lockEnabled() { return localStorage.getItem("mf_lock_type") !== null; }
+function lockType() { return localStorage.getItem("mf_lock_type"); }
+
+async function registerFaceID() {
+  if (!window.PublicKeyCredential) throw new Error("unsupported");
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const userId = crypto.getRandomValues(new Uint8Array(16));
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge,
+      rp: { name: "Money Flow", id: location.hostname },
+      user: { id: userId, name: "money-flow-user", displayName: "Money Flow" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+      timeout: 60000,
+    },
+  });
+  localStorage.setItem("mf_cred_id", bufToB64(cred.rawId));
+  localStorage.setItem("mf_lock_type", "webauthn");
+}
+
+async function verifyFaceID() {
+  const credId = localStorage.getItem("mf_cred_id");
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      allowCredentials: [{ id: b64ToBuf(credId), type: "public-key" }],
+      userVerification: "required",
+      timeout: 60000,
+    },
+  });
+}
+
+const lockIconSvg = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+
+function showUnlockScreen() {
+  const screen = document.getElementById("lockScreen");
+  screen.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  if (lockType() === "webauthn") {
+    screen.innerHTML = `
+      <div class="lock-icon">${lockIconSvg}</div>
+      <div class="lock-title">برای ورود، هویتت رو تأیید کن</div>
+      <button class="lock-btn" id="unlockBtn">باز کردن با Face ID</button>
+      <div class="lock-error" id="lockErr"></div>
+    `;
+    document.getElementById("unlockBtn").addEventListener("click", attemptWebAuthnUnlock);
+  } else if (lockType() === "pin") {
+    renderPinScreen("unlock");
+  }
+}
+
+function hideLockScreen() {
+  document.getElementById("lockScreen").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+async function attemptWebAuthnUnlock() {
+  const errEl = document.getElementById("lockErr");
+  if (errEl) errEl.textContent = "";
+  try {
+    await verifyFaceID();
+    hideLockScreen();
+  } catch (e) {
+    if (errEl) errEl.textContent = "تأیید هویت انجام نشد. دوباره امتحان کن.";
+  }
+}
+
+function renderPinScreen(mode) {
+  pinMode = mode;
+  pinBuffer = "";
+  const screen = document.getElementById("lockScreen");
+  screen.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  const title = mode === "unlock" ? "پین رو وارد کن" : mode === "confirm" ? "پین رو دوباره وارد کن" : "یه پین ۴ رقمی بساز";
+  screen.innerHTML = `
+    <div class="lock-icon">${lockIconSvg}</div>
+    <div class="lock-title">${title}</div>
+    <div class="pin-dots" id="pinDots">${[0,1,2,3].map(()=>'<div class="pin-dot"></div>').join('')}</div>
+    <div class="lock-error" id="lockErr"></div>
+    <div class="pin-pad" id="pinPad">
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-n="${n}">${n}</button>`).join('')}
+      <div></div>
+      <button data-n="0">0</button>
+      <button class="pin-del" data-n="del">⌫</button>
+    </div>
+  `;
+  document.querySelectorAll("#pinPad button[data-n]").forEach(btn => {
+    btn.addEventListener("click", () => onPinKey(btn.dataset.n));
+  });
+}
+
+function updatePinDots() {
+  document.querySelectorAll("#pinDots .pin-dot").forEach((dot, i) => {
+    dot.classList.toggle("filled", i < pinBuffer.length);
+  });
+}
+
+async function onPinKey(key) {
+  const errEl = document.getElementById("lockErr");
+  if (key === "del") { pinBuffer = pinBuffer.slice(0, -1); updatePinDots(); return; }
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += key;
+  updatePinDots();
+  if (pinBuffer.length !== 4) return;
+
+  if (pinMode === "unlock") {
+    const hash = await sha256Hex(pinBuffer);
+    if (hash === localStorage.getItem("mf_pin_hash")) {
+      hideLockScreen();
+    } else {
+      if (errEl) errEl.textContent = "پین اشتباهه";
+      pinBuffer = "";
+      updatePinDots();
+    }
+  } else if (pinMode === "setup") {
+    pinFirstEntry = pinBuffer;
+    setTimeout(() => renderPinScreen("confirm"), 150);
+  } else if (pinMode === "confirm") {
+    if (pinBuffer === pinFirstEntry) {
+      const hash = await sha256Hex(pinBuffer);
+      localStorage.setItem("mf_pin_hash", hash);
+      localStorage.setItem("mf_lock_type", "pin");
+      hideLockScreen();
+      updateLockSwitchUI();
+    } else {
+      if (errEl) errEl.textContent = "پین‌ها یکی نبودن";
+      setTimeout(() => renderPinScreen("setup"), 800);
+    }
+  }
+}
+
+function updateLockSwitchUI() {
+  const sw = document.getElementById("lockSwitch");
+  const on = lockEnabled();
+  sw.classList.toggle("on", on);
+  document.getElementById("lockDesc").textContent = on
+    ? (lockType() === "pin" ? "با پین قفل شده — برای خاموش کردن بزن" : "هر بار قبل از باز شدن اپ، هویتت تأیید می‌شه")
+    : "هر بار قبل از باز شدن اپ، هویتت تأیید می‌شه";
+}
+
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  updateLockSwitchUI();
+  document.getElementById("settingsBackdrop").style.display = "flex";
+});
+document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+  document.getElementById("settingsBackdrop").style.display = "none";
+});
+document.getElementById("settingsBackdrop").addEventListener("click", (e) => {
+  if (e.target.id === "settingsBackdrop") document.getElementById("settingsBackdrop").style.display = "none";
+});
+
+document.getElementById("lockSwitch").addEventListener("click", async () => {
+  if (lockEnabled()) {
+    localStorage.removeItem("mf_lock_type");
+    localStorage.removeItem("mf_cred_id");
+    localStorage.removeItem("mf_pin_hash");
+    updateLockSwitchUI();
+    return;
+  }
+  try {
+    await registerFaceID();
+    updateLockSwitchUI();
+  } catch (e) {
+    document.getElementById("settingsBackdrop").style.display = "none";
+    renderPinScreen("setup");
+  }
+});
+
+
+function fmt(n) { return new Intl.NumberFormat("en-US").format(Math.round(n)); }
+
+function smartDate(iso) {
+  const d = new Date(iso), now = new Date();
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString()) return `Today, ${time}`;
+  if (d.toDateString() === yest.toDateString()) return `Yesterday, ${time}`;
+  return `${d.toLocaleDateString("en-US", { day: "numeric", month: "short" })}, ${time}`;
+}
+function dayKey(d) { return new Intl.DateTimeFormat("en-US", { year:"numeric", month:"2-digit", day:"2-digit" }).format(d); }
+function dayLabel(d, now) {
+  if (d.toDateString() === now.toDateString()) return "Today";
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === yest.toDateString()) return "Yesterday";
+  return new Intl.DateTimeFormat("en-US", { weekday:"short", day:"numeric", month:"long" }).format(d);
+}
+function monthKey(d) { return new Intl.DateTimeFormat("en-US", { year:"numeric", month:"2-digit" }).format(d); }
+function monthLabel(d) { return new Intl.DateTimeFormat("en-US", { year:"numeric", month:"long" }).format(d); }
+
+function persist() {
+  try { localStorage.setItem("mf_entries", JSON.stringify(entries)); }
+  catch(e) { showError("ذخیره‌سازی انجام نشد"); }
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorMsg");
+  el.textContent = msg; el.style.display = "block";
+}
+function clearError() {
+  document.getElementById("errorMsg").style.display = "none";
+}
+
+function render() {
+  const income = entries.filter(e => e.type === "income").reduce((s,e) => s + e.amount, 0);
+  const expense = entries.filter(e => e.type === "expense").reduce((s,e) => s + e.amount, 0);
+  const saved = income - expense;
+
+  document.getElementById("balanceNum").textContent = (saved >= 0 ? "" : "-") + fmt(Math.abs(saved));
+  document.getElementById("balanceNum").style.color = saved >= 0 ? "var(--green)" : "var(--rust)";
+  document.getElementById("incomeTotal").textContent = fmt(income);
+  document.getElementById("expenseTotal").textContent = fmt(expense);
+
+  // Period summary
+  const now = new Date();
+  const map = {};
+  entries.forEach(e => {
+    const d = new Date(e.date);
+    const key = state.summaryView === "day" ? dayKey(d) : monthKey(d);
+    if (!map[key]) map[key] = { key, label: state.summaryView === "day" ? dayLabel(d, now) : monthLabel(d), sortDate: d, income: 0, expense: 0 };
+    if (e.type === "income") map[key].income += e.amount; else map[key].expense += e.amount;
+  });
+  const periods = Object.values(map).sort((a,b) => b.sortDate - a.sortDate);
+  const periodList = document.getElementById("periodList");
+  periodList.innerHTML = periods.length === 0
+    ? `<div class="empty">هنوز داده‌ای نیست</div>`
+    : periods.map(p => {
+        const net = p.income - p.expense;
+        return `<div class="period-row">
+          <div class="period-label">${p.label}</div>
+          <div class="period-side">
+            <div class="period-mini"><div>ورودی ${fmt(p.income)}</div><div>خروجی ${fmt(p.expense)}</div></div>
+            <span class="period-net mono" style="color:${net >= 0 ? 'var(--green)' : 'var(--rust)'}">${net >= 0 ? '' : '-'}${fmt(Math.abs(net))}</span>
+          </div>
+        </div>`;
+      }).join("");
+
+  // Category breakdown
+  const catMap = {};
+  entries.forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.amount; });
+  const byCat = ALL_CATEGORIES.map(c => ({...c, total: catMap[c.id] || 0})).filter(c => c.total > 0).sort((a,b) => b.total - a.total);
+  const catSection = document.getElementById("catSection");
+  if (byCat.length > 0) {
+    catSection.style.display = "";
+    const maxCat = Math.max(1, ...byCat.map(c => c.total));
+    document.getElementById("catBars").innerHTML = byCat.map(c => `
+      <div class="cat-bar-row">
+        <div class="cat-bar-label">${c.label}</div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${(c.total/maxCat)*100}%;background:${c.color}"></div></div>
+        <div class="cat-bar-total mono">${fmt(c.total)}</div>
+      </div>`).join("");
+  } else {
+    catSection.style.display = "none";
+  }
+
+  // Transactions (filtered by search)
+  const q = state.search.trim().toLowerCase();
+  const filtered = q
+    ? entries.filter(e => (e.title || "").toLowerCase().includes(q) || (e.note || "").toLowerCase().includes(q))
+    : entries;
+
+  const txnList = document.getElementById("txnList");
+  if (entries.length === 0) {
+    txnList.innerHTML = `<div class="empty">هنوز چیزی ثبت نشده. با دکمه + شروع کن.</div>`;
+  } else if (filtered.length === 0) {
+    txnList.innerHTML = `<div class="empty">چیزی با این عنوان پیدا نشد.</div>`;
+  } else {
+    txnList.innerHTML = filtered.map((e, i) => {
+      const cat = ALL_CATEGORIES.find(c => c.id === e.category);
+      const sub = [cat && cat.label, e.note].filter(Boolean).join(" · ");
+      return `<div class="txn-row" style="animation-delay:${Math.min(i,8)*30}ms">
+        <div class="txn-left">
+          <div class="dot" style="background:${cat ? cat.color : '#9CA3AF'}"></div>
+          <div style="min-width:0">
+            <div class="txn-title">${escapeHtml(e.title || (cat ? cat.label : "متفرقه"))}</div>
+            <div class="txn-sub">${escapeHtml(sub)}</div>
+          </div>
+        </div>
+        <div class="txn-right">
+          <div>
+            <div class="txn-amt mono" style="color:${e.type === 'income' ? 'var(--green)' : 'var(--rust)'}">${e.type === 'income' ? '+' : '-'}${fmt(e.amount)}</div>
+            <div class="txn-date">${smartDate(e.date)}</div>
+          </div>
+          <button class="edit-btn" data-id="${e.id}" aria-label="ویرایش">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+          <button class="del-btn" data-id="${e.id}" aria-label="حذف">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  txnList.querySelectorAll(".del-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      entries = entries.filter(e => e.id !== btn.dataset.id);
+      persist(); render();
+    });
+  });
+  txnList.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => openEditForm(btn.dataset.id));
+  });
+
+  renderCatChips();
+}
+
+function escapeHtml(s) {
+  const d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML;
+}
+
+function renderCatChips() {
+  const list = state.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  if (!list.find(c => c.id === state.category)) state.category = list[0].id;
+  document.getElementById("catChips").innerHTML = list.map(c => `
+    <button type="button" data-id="${c.id}" class="${state.category === c.id ? 'active' : ''}"
+      style="${state.category === c.id ? `background:${c.color};color:var(--bg)` : ''}">${c.label}</button>
+  `).join("");
+  document.querySelectorAll("#catChips button").forEach(btn => {
+    btn.addEventListener("click", () => { state.category = btn.dataset.id; renderCatChips(); });
+  });
+}
+
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  state.search = e.target.value;
+  document.getElementById("searchClear").classList.toggle("show", state.search.length > 0);
+  render();
+});
+document.getElementById("searchClear").addEventListener("click", () => {
+  state.search = "";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchClear").classList.remove("show");
+  render();
+});
+
+document.getElementById("tabDay").addEventListener("click", () => {
+  state.summaryView = "day";
+  document.getElementById("tabDay").classList.add("active");
+  document.getElementById("tabMonth").classList.remove("active");
+  render();
+});
+document.getElementById("tabMonth").addEventListener("click", () => {
+  state.summaryView = "month";
+  document.getElementById("tabMonth").classList.add("active");
+  document.getElementById("tabDay").classList.remove("active");
+  render();
+});
+
+document.getElementById("openFormBtn").addEventListener("click", () => {
+  state.editingId = null;
+  document.querySelector(".sheet-head h2").textContent = "تراکنش جدید";
+  document.getElementById("submitBtn").textContent = "ثبت تراکنش";
+  setType("expense");
+  document.getElementById("backdrop").style.display = "flex";
+});
+document.getElementById("closeFormBtn").addEventListener("click", closeForm);
+document.getElementById("backdrop").addEventListener("click", (e) => {
+  if (e.target.id === "backdrop") closeForm();
+});
+function closeForm() {
+  document.getElementById("backdrop").style.display = "none";
+  document.getElementById("inputTitle").value = "";
+  document.getElementById("inputAmount").value = "";
+  document.getElementById("inputNote").value = "";
+  state.editingId = null;
+  clearError();
+}
+
+function openEditForm(id) {
+  const entry = entries.find(e => e.id === id);
+  if (!entry) return;
+  state.editingId = id;
+  document.querySelector(".sheet-head h2").textContent = "ویرایش تراکنش";
+  document.getElementById("submitBtn").textContent = "ذخیره تغییرات";
+  setType(entry.type);
+  state.category = entry.category;
+  renderCatChips();
+  document.getElementById("inputTitle").value = entry.title || "";
+  document.getElementById("inputAmount").value = entry.amount;
+  document.getElementById("inputNote").value = entry.note || "";
+  clearError();
+  document.getElementById("backdrop").style.display = "flex";
+}
+
+document.getElementById("btnExpense").addEventListener("click", () => setType("expense"));
+document.getElementById("btnIncome").addEventListener("click", () => setType("income"));
+function setType(t) {
+  state.type = t;
+  document.getElementById("btnExpense").classList.toggle("active", t === "expense");
+  document.getElementById("btnIncome").classList.toggle("active", t === "income");
+  const list = t === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  state.category = list[0].id;
+  renderCatChips();
+}
+
+document.getElementById("submitBtn").addEventListener("click", () => {
+  const amount = parseFloat(document.getElementById("inputAmount").value);
+  const title = document.getElementById("inputTitle").value.trim();
+  const note = document.getElementById("inputNote").value.trim();
+  clearError();
+  if (!amount || amount <= 0) { showError("مبلغ را درست وارد کن"); return; }
+  if (!title) { showError("یک عنوان بنویس"); return; }
+
+  if (state.editingId) {
+    const idx = entries.findIndex(e => e.id === state.editingId);
+    if (idx !== -1) {
+      entries[idx] = { ...entries[idx], type: state.type, amount, category: state.category, title, note };
+    }
+  } else {
+    entries.unshift({
+      id: Date.now().toString(),
+      type: state.type,
+      amount, category: state.category, title, note,
+      date: new Date().toISOString(),
+    });
+  }
+  persist();
+  closeForm();
+  render();
+});
+
+renderCatChips();
+render();
+if (lockEnabled()) showUnlockScreen();
+</script>
+</body>
+</html>
